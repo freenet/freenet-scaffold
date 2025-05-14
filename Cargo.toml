@@ -10,3 +10,4 @@ homepage = "https://freenet.org/"
 [dependencies]
 serde = { version = "1.0.219", features = ["derive"] }
 freenet-scaffold-macro = "0.2.1"
+freenet-stdlib = "0.1.5"
