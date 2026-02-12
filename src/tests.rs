@@ -147,3 +147,155 @@ fn test_contractual_macro() {
         .is_ok());
     assert_eq!(test_struct, new_state);
 }
+
+// --- post_apply_delta hook tests (separate module to avoid ComposableState import conflict) ---
+mod hook_tests {
+    use crate as freenet_scaffold;
+    use crate::composable;
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+    pub struct HookParams;
+
+    #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+    pub struct HookI32(pub i32);
+
+    #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+    pub struct HookString(pub String);
+
+    impl freenet_scaffold::ComposableState for HookI32 {
+        type ParentState = TestStructWithHook;
+        type Summary = i32;
+        type Delta = i32;
+        type Parameters = HookParams;
+
+        fn verify(&self, _: &Self::ParentState, _: &Self::Parameters) -> Result<(), String> {
+            Ok(())
+        }
+        fn summarize(&self, _: &Self::ParentState, _: &Self::Parameters) -> Self::Summary {
+            self.0
+        }
+        fn delta(
+            &self,
+            _: &Self::ParentState,
+            _: &Self::Parameters,
+            old: &Self::Summary,
+        ) -> Option<Self::Delta> {
+            Some(self.0 - old)
+        }
+        fn apply_delta(
+            &mut self,
+            _: &Self::ParentState,
+            _: &Self::Parameters,
+            delta: &Option<Self::Delta>,
+        ) -> Result<(), String> {
+            if let Some(d) = delta {
+                self.0 += d;
+            }
+            Ok(())
+        }
+    }
+
+    impl freenet_scaffold::ComposableState for HookString {
+        type ParentState = TestStructWithHook;
+        type Summary = String;
+        type Delta = String;
+        type Parameters = HookParams;
+
+        fn verify(&self, _: &Self::ParentState, _: &Self::Parameters) -> Result<(), String> {
+            Ok(())
+        }
+        fn summarize(&self, _: &Self::ParentState, _: &Self::Parameters) -> Self::Summary {
+            self.0.clone()
+        }
+        fn delta(
+            &self,
+            _: &Self::ParentState,
+            _: &Self::Parameters,
+            old: &Self::Summary,
+        ) -> Option<Self::Delta> {
+            if self.0 == *old {
+                None
+            } else {
+                Some(self.0.clone())
+            }
+        }
+        fn apply_delta(
+            &mut self,
+            _: &Self::ParentState,
+            _: &Self::Parameters,
+            delta: &Option<Self::Delta>,
+        ) -> Result<(), String> {
+            if let Some(d) = delta {
+                self.0 = d.clone();
+            }
+            Ok(())
+        }
+    }
+
+    #[composable(post_apply_delta = "normalize")]
+    #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+    pub struct TestStructWithHook {
+        number: HookI32,
+        text: HookString,
+    }
+
+    impl TestStructWithHook {
+        fn normalize(&mut self, _parameters: &HookParams) -> Result<(), String> {
+            if self.number.0 < 0 {
+                self.text.0 = "negative".to_string();
+            }
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn test_post_apply_delta_hook_triggers() {
+        let initial = TestStructWithHook {
+            number: HookI32(10),
+            text: HookString("hello".to_string()),
+        };
+        let params = HookParams;
+
+        let modified = TestStructWithHook {
+            number: HookI32(-5),
+            text: HookString("hello".to_string()),
+        };
+        let summary = initial.summarize(&initial, &params);
+        let delta = modified.delta(&initial, &params, &summary);
+
+        let mut result = initial.clone();
+        result.apply_delta(&initial, &params, &delta).unwrap();
+
+        assert_eq!(result.number.0, -5);
+        assert_eq!(
+            result.text.0, "negative",
+            "post_apply_delta hook should modify text when number is negative"
+        );
+    }
+
+    #[test]
+    fn test_post_apply_delta_hook_not_triggered() {
+        let initial = TestStructWithHook {
+            number: HookI32(10),
+            text: HookString("hello".to_string()),
+        };
+        let params = HookParams;
+
+        let modified = TestStructWithHook {
+            number: HookI32(20),
+            text: HookString("world".to_string()),
+        };
+        let summary = initial.summarize(&initial, &params);
+        let delta = modified.delta(&initial, &params, &summary);
+
+        let mut result = initial.clone();
+        result.apply_delta(&initial, &params, &delta).unwrap();
+
+        assert_eq!(result.number.0, 20);
+        assert_eq!(
+            result.text.0, "world",
+            "hook should not modify text when number >= 0"
+        );
+    }
+}
