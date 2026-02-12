@@ -1,6 +1,6 @@
 [package]
 name = "freenet-scaffold"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 license = "LGPL-2.1-only"
 description = "Support library for building Freenet apps"
@@ -9,4 +9,4 @@ homepage = "https://freenet.org/"
 
 [dependencies]
 serde = { version = "1.0.219", features = ["derive"] }
-freenet-scaffold-macro = "0.2.1"
+freenet-scaffold-macro = "0.2.2"

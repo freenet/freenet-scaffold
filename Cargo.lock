@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "freenet-scaffold"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "freenet-scaffold-macro",
  "serde",
@@ -12,9 +12,9 @@ dependencies = [
 
 [[package]]
 name = "freenet-scaffold-macro"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "306f03a4c767216147e951527cd2460436d6220d97fa1399a137fdf21069222f"
+checksum = "99c6d26e7ce019d8eba883b307ee55dd1d10c85ccc9bec72b069bdf07c50a87d"
 dependencies = [
  "quote",
  "syn",

@@ -1,3 +1,4 @@
+pub mod convergence;
 pub mod util;
 
 pub use freenet_scaffold_macro::*;
