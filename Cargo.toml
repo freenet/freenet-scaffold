@@ -2,7 +2,7 @@
 name = "freenet-scaffold"
 version = "0.2.2"
 edition = "2021"
-license = "LGPL-2.1-only"
+license = "LGPL-3.0-only"
 description = "Support library for building Freenet apps"
 repository = "https://github.com/freenet/freenet-scaffold"
 homepage = "https://freenet.org/"
